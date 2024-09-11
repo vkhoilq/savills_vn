@@ -19,3 +19,9 @@ My purpose for the start is only implementing an automatic Booking request to bo
 Right now, the way Savills control the booking is very strict. It only allows 1 booking per week and can only book 1 month in advance
 
 so instead of having to wake up at 12am last day of every month, as a software engineer, I decided to automate the booking process :D
+
+
+## How to run the code
+```python
+python savills.py
+```
