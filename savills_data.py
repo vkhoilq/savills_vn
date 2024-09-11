@@ -17,7 +17,13 @@ class Unit(BaseModel):
     memberId: int
     
 
-
+class Neighbor(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: str
+    fullUnitName: str
+    
 class Member(BaseModel):
     id: int
     name: str

@@ -216,6 +216,45 @@ class Savills(BaseRESTClient):
                 retries -= 1
                 
         return None
+    
+    def get_neighbor_info(self,house_code="T1-34-02"):
+        # use the get Fee API to get the neighbor's information
+        try:
+            result = self.get(f"/core/api/Fees/fees/receiptfilters?fullUnitCode={house_code}&isMain=true&page=1&pageSize=1&IsIncludeFeePayer=true&culture=vi")
+            result = result["result"]["items"][0]["feePayer"]
+            member = Member(
+                id=result["residentId"],
+                name=result["fullName"],
+                phone=result["phoneNumber"],
+                email=result["email"],
+                profilePictureId="",
+                isBOC=False
+
+            )
+            return member
+        except Exception as e:
+            print(e)
+            return None
+def test_neighbor_info():
+    # test right info
+    house_code = "T1-34-02"
+    print(f"House Code {house_code}")
+    member = savills.get_neighbor_info(house_code=house_code)
+    print(member)
+    
+    # test wrong info
+    house_code = "T1-35-02"
+    print(f"House Code {house_code}")
+    member = savills.get_neighbor_info(house_code=house_code)
+    print(member)
+    
+    ## looping
+    for i in range(1,15):
+        house_code = f"T1-33-{i:02}"
+        print(f"House Code {house_code}")
+        member = savills.get_neighbor_info(house_code=house_code)
+        print(member)
+        print("------------------------------------")
         
 def test_get_booking_detail(start=24222,stop=24300):
     for i in range(24222,24300):
@@ -240,52 +279,7 @@ def test_create_get_delete_booking():
     print(savills.delete_booking(booking_number))
     print(f"Delete Booking time {time() - start}")
     
-def thread_worker(instance, a):
-    return instance.create_booking(a)
-def test_multiple_booking_parallel(hour=13,dayinweek=3,month=10,year=2024):
-    from concurrent.futures import ThreadPoolExecutor
-    from gettime import get_day_times
-    
-    lst = get_day_times(dayinweek=dayinweek,month=month,year=year,hour=hour)
-    print(lst)
-    return
-    with ThreadPoolExecutor(max_workers=len(lst)) as executor:
-        futures = [executor.submit(thread_worker, savills, arg) for arg in lst]
-        output = [future.result() for future in futures]
 
-
-            
-    print(output)
-
-
-import sys
-
-# Savills only allow to book 30 days in advance and at exactly 00:00 therefore have to set this call
-def savills_booking_schedule(arg):
-    import time
-    from gettime import get_timezone
-    
-    if len(arg) != 6:    
-        print(f"python savills.py (hour) (day in week Sat is 5) (month) (year=2024) (wait=1)")
-        print("If wait = 1 it will wait till 00:00 to start")
-        exit()
-    hour = int(arg[1])
-    dayinweek = int(arg[2])
-    month = int(arg[3])
-    year = int(arg[4])
-    if arg[5] == "1":
-        wait = True
-    else:
-        wait = False
-    if wait:
-        while True:
-            now = datetime.datetime.now(tz=get_timezone())
-            print(now)
-            if now.hour == 0 and now.minute == 0 and now.second == 0:
-                break
-            time.sleep(1)
-    
-    test_multiple_booking_parallel(hour=hour,dayinweek=dayinweek,month=month,year=year)
 
 if  __name__ == "__main__":
     ## replace with your username and password
@@ -294,15 +288,5 @@ if  __name__ == "__main__":
     savills = Savills(USERNAME,PASSWORD)
     print(f"Login time {time() - start}")
     start = time()
-    #savills.login()
-    #bookings = savills.get_bookings()
-    #print(bookings)
-    #print(savills.create_booking(datetime.datetime.now(),datetime.datetime.now()+datetime.timedelta(hours=10)))
-    #test_get_booking_detail()
-    #test_create_get_delete_booking()
-    #savills.delete_booking(24531)
-    #test_multiple_booking_parallel()
-    #print(f"Booking time {time() - start}")   
-    
-    savills_booking_schedule(sys.argv)
-    print('All Done')
+    test_neighbor_info()
+
