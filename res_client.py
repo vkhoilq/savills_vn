@@ -2,6 +2,18 @@ import requests
 import json
 import pydantic
 
+def generate_curl_command(response):
+    req = response.request
+
+    command = "curl -X {method} -H {headers} -d '{data}' '{uri}'"
+    method = req.method
+    uri = req.url
+    data = req.body
+    headers = ['"{0}: {1}"'.format(k, v) for k, v in req.headers.items()]
+    headers = " -H ".join(headers)
+    return command.format(method=method, headers=headers, data=data, uri=uri)
+
+
 class BaseRESTClient:
     def __init__(self, user, password, base_url,login_endpoint="/login"):
         self.user = user
@@ -34,19 +46,28 @@ class BaseRESTClient:
         headers = {
         'Host': f'{self.base_url.replace("https://", "")}',
         'Accept': 'application/json',
+        'api-version': '2',
         'Devicetypeid': '2',
         'Cache-Control': 'no-cache',
         'Authorization': f"Bearer {self.token}",
         #'Content-Type': 'application/json',
         'Accept-Encoding': 'gzip',
         'User-Agent': 'okhttp/4.9.2',
+        'content-type': 'application/json',
         'Cookie': 'ApplicationGatewayAffinity=4d41f1ce71536351747e651ab04cb5f4; ApplicationGatewayAffinityCORS=4d41f1ce71536351747e651ab04cb5f4'
         }
 
         try:
-            response = requests.request(method, f"{self.base_url}/{endpoint}", json=data, headers=headers)
+            if data:
+                response = requests.request(method, f"{self.base_url}/{endpoint}", json=data, headers=headers)
+            else:
+                response = requests.request(method, f"{self.base_url}/{endpoint}", headers=headers)                
+            
+            #print(generate_curl_command(response))
             response.raise_for_status()
-
+            
+            
+            
             try:
                 return response.json()
             except json.JSONDecodeError:
@@ -57,7 +78,7 @@ class BaseRESTClient:
                     raise Exception("Login failed")
                 return self._make_request(method, endpoint, data)
             else:
-                raise Exception(f"Network error: {e}")
+                raise Exception(f"Network error: {e}\n Response: {response.text}")
 
     def get(self, endpoint, data=None):
         """Makes a GET request to the specified endpoint."""

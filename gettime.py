@@ -33,10 +33,10 @@ def get_day_times(year, month,dayinweek,hour):
 
     # Iterate over the days in the month, adding 7 days each time to get the next Saturday
     dest_timeslots = []
-    for day in range(days_in_month):
-        if dest_timeslot.day <= day and dest_timeslot.month == month:
-            dest_timeslots.append(dest_timeslot)
-            dest_timeslot += datetime.timedelta(days=7)
+    
+    while dest_timeslot.day <= days_in_month and dest_timeslot.month == month:
+        dest_timeslots.append(dest_timeslot)
+        dest_timeslot += datetime.timedelta(days=7)
 
     return dest_timeslots
 

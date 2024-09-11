@@ -6,6 +6,7 @@ import datetime
 import json
 from savills_data import Building, Unit, Member, Booking
 
+from time import time
 from rich import print
 
 class Savills(BaseRESTClient):
@@ -174,7 +175,7 @@ class Savills(BaseRESTClient):
             print(e)
             return False
     
-    def create_booking(self, startDate:datetime.datetime, endDate=None, amenityId=3):
+    def create_booking(self, startDate:datetime.datetime, endDate=None, amenityId=3, retries = 5):
         #https://vn.propertycube.asia/booking/api/bookings/create?culture=vi
         #https://vn.propertycube.asia/booking/api/bookings/create?culture=vi
         
@@ -201,17 +202,20 @@ class Savills(BaseRESTClient):
             "isAcceptPolicy": True,
             "tenantId": self.building.id,
             "numberOfPerson": "",
-            "file": []
+            "files": []
         }
-        str = json.dumps(booking_dict)
-        encodedata = base64.b64encode(str.encode()).decode()
-        try:
-            result = self.post(f"/booking/api/bookings/create?culture=vi",data={"data": encodedata})
-            return result["result"]["id"]
-        except Exception as e:
-            print(e)
-            return None
-        
+        str = json.dumps(booking_dict,ensure_ascii=False)
+        encodedata = base64.b64encode(str.encode('utf8')).decode()
+        output = f'{"data"}'
+        while retries>0:
+            try:
+                result = self.post(f"/booking/api/bookings/create?culture=vi",data={"data": encodedata})
+                return result["result"]["id"]
+            except Exception as e:
+                print(e)
+                retries -= 1
+                
+        return None
         
 def test_get_booking_detail(start=24222,stop=24300):
     for i in range(24222,24300):
@@ -228,20 +232,77 @@ def test_create_get_delete_booking():
     startDate = datetime.datetime.now(tz=get_timezone()).replace(microsecond=0,minute=0,second=0) + datetime.timedelta(days=30)
     booking_number = savills.create_booking(startDate=startDate)
     print(f' Success Booking Number {booking_number}')
+    print(f"Booking time {time() - start}")
     print(f'Get Detail Booking Number {booking_number}')
     print(savills.get_booking_detail(booking_number))
+    print(f"Detail Booking time {time() - start}")
     print(f'Delete Booking Number {booking_number}')
     print(savills.delete_booking(booking_number))
+    print(f"Delete Booking time {time() - start}")
     
+def thread_worker(instance, a):
+    return instance.create_booking(a)
+def test_multiple_booking_parallel(hour=13,dayinweek=3,month=10,year=2024):
+    from concurrent.futures import ThreadPoolExecutor
+    from gettime import get_day_times
+    
+    lst = get_day_times(dayinweek=dayinweek,month=month,year=year,hour=hour)
+    print(lst)
+    return
+    with ThreadPoolExecutor(max_workers=len(lst)) as executor:
+        futures = [executor.submit(thread_worker, savills, arg) for arg in lst]
+        output = [future.result() for future in futures]
+
+
+            
+    print(output)
+
+
+import sys
+
+# Savills only allow to book 30 days in advance and at exactly 00:00 therefore have to set this call
+def savills_booking_schedule(arg):
+    import time
+    from gettime import get_timezone
+    
+    if len(arg) != 6:    
+        print(f"python savills.py (hour) (day in week Sat is 5) (month) (year=2024) (wait=1)")
+        print("If wait = 1 it will wait till 00:00 to start")
+        exit()
+    hour = int(arg[1])
+    dayinweek = int(arg[2])
+    month = int(arg[3])
+    year = int(arg[4])
+    if arg[5] == "1":
+        wait = True
+    else:
+        wait = False
+    if wait:
+        while True:
+            now = datetime.datetime.now(tz=get_timezone())
+            print(now)
+            if now.hour == 0 and now.minute == 0 and now.second == 0:
+                break
+            time.sleep(1)
+    
+    test_multiple_booking_parallel(hour=hour,dayinweek=dayinweek,month=month,year=year)
 
 if  __name__ == "__main__":
     ## replace with your username and password
     from config import USERNAME,PASSWORD
+    start = time()
     savills = Savills(USERNAME,PASSWORD)
+    print(f"Login time {time() - start}")
+    start = time()
     #savills.login()
     #bookings = savills.get_bookings()
     #print(bookings)
     #print(savills.create_booking(datetime.datetime.now(),datetime.datetime.now()+datetime.timedelta(hours=10)))
     #test_get_booking_detail()
-    test_create_get_delete_booking()
-        
+    #test_create_get_delete_booking()
+    #savills.delete_booking(24531)
+    #test_multiple_booking_parallel()
+    #print(f"Booking time {time() - start}")   
+    
+    savills_booking_schedule(sys.argv)
+    print('All Done')
