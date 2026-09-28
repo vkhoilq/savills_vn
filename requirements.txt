@@ -1,3 +1,2 @@
-pandas
 pydantic
 rich    #for display colorful
