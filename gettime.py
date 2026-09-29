@@ -1,12 +1,10 @@
 import datetime
 import calendar
-import pytz
+from zoneinfo import ZoneInfo
 
 def get_timezone():
-    # Create a timezone object for UTC+7
-    from dateutil.tz import tzoffset
-    tz = tzoffset('UTC+7', 7*3600)  # 7 hours * 3600 seconds/hour
-    return tz
+    # Vietnam is UTC+7 with no DST; stdlib ZoneInfo handles this natively in 3.9+.
+    return ZoneInfo("Asia/Ho_Chi_Minh")
 
 def get_day_times(year, month,dayinweek,hour):
     

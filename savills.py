@@ -207,6 +207,7 @@ class Savills(BaseRESTClient):
         str = json.dumps(booking_dict,ensure_ascii=False)
         encodedata = base64.b64encode(str.encode('utf8')).decode()
         output = f'{"data"}'
+        print(output)
         while retries>0:
             try:
                 result = self.post(f"/booking/api/bookings/create?culture=vi",data={"data": encodedata})
