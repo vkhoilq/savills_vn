@@ -1,0 +1,48 @@
+name: Booking Schedule
+
+on:
+  workflow_dispatch:
+    inputs:
+      hour:
+        description: "Hour to book"
+        required: true
+        default: "7"
+      dayinweek:
+        description: "Day in week (Mon=0, Sat=5)"
+        required: true
+        default: "5"
+      month:
+        description: "Month"
+        required: true
+        default: "11"
+      year:
+        description: "Year"
+        required: true
+        default: "2027"
+      wait:
+        description: "Wait until 00:00 (1=yes, 0=no)"
+        required: true
+        default: "1"
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Run booking
+        env:
+          USERNAME: ${{ secrets.SAVILLS_USERNAME }}
+          PASSWORD: ${{ secrets.SAVILLS_PASSWORD }}
+          GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
+          GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
+        run: |
+          uv run booking_schedule_cli.py \
+            "${{ inputs.hour }}" \
+            "${{ inputs.dayinweek }}" \
+            "${{ inputs.month }}" \
+            "${{ inputs.year }}" \
+            "${{ inputs.wait }}"
