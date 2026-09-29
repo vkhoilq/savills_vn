@@ -71,6 +71,8 @@ def test_multiple_booking_parallel(hour=13,dayinweek=3,month=10,year=2024):
 
             
     print(output)
+    send_gotify_message(str(output))
+    
 
 
 

@@ -208,14 +208,26 @@ class Savills(BaseRESTClient):
         encodedata = base64.b64encode(str.encode('utf8')).decode()
         output = f'{"data"}'
         print(output)
-        while retries>0:
-            try:
-                result = self.post(f"/booking/api/bookings/create?culture=vi",data={"data": encodedata})
-                return result["result"]["id"]
-            except Exception as e:
-                print(e)
-                retries -= 1
-                
+
+        # Fallback cascade: original → +1 hour → -1 hour
+        timeslots = [
+            startDate,
+            startDate + datetime.timedelta(hours=1),
+            startDate - datetime.timedelta(hours=1),
+        ]
+
+        for slot in timeslots:
+            print(f"Trying timeslot: {slot.isoformat()}")
+            slot_retries = retries
+            while slot_retries > 0:
+                try:
+                    result = self.post(f"/booking/api/bookings/create?culture=vi",data={"data": encodedata})
+                    return result["result"]["id"]
+                except Exception as e:
+                    print(e)
+                    slot_retries -= 1
+            print(f"Exhausted retries for {slot.isoformat()}, trying next fallback...")
+
         return None
     
     def get_neighbor_info(self,house_code="T1-34-02"):
