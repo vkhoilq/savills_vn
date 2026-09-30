@@ -8,7 +8,7 @@ on:
         required: true
         default: "7"
       dayinweek:
-        description: "Day in week (Mon=0, Sat=5)"
+        description: "Day in week for account 1 (Mon=0, Sat=5). Account 2 gets +1 day."
         required: true
         default: "5"
       month:
@@ -27,6 +27,16 @@ on:
 jobs:
   book:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - username: ${{ secrets.SAVILLS_USERNAME_1 }}
+            password: ${{ secrets.SAVILLS_PASSWORD_1 }}
+            day_offset: 0
+          - username: ${{ secrets.SAVILLS_USERNAME_2 }}
+            password: ${{ secrets.SAVILLS_PASSWORD_2 }}
+            day_offset: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -35,14 +45,15 @@ jobs:
 
       - name: Run booking
         env:
-          USERNAME: ${{ secrets.SAVILLS_USERNAME }}
-          PASSWORD: ${{ secrets.SAVILLS_PASSWORD }}
+          USERNAME: ${{ matrix.username }}
+          PASSWORD: ${{ matrix.password }}
           GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
           GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
         run: |
+          dayinweek=$(( ${{ inputs.dayinweek }} + ${{ matrix.day_offset }} ))
           uv run booking_schedule_cli.py \
             "${{ inputs.hour }}" \
-            "${{ inputs.dayinweek }}" \
+            "$dayinweek" \
             "${{ inputs.month }}" \
             "${{ inputs.year }}" \
             "${{ inputs.wait }}"
