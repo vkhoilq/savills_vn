@@ -107,8 +107,11 @@ def savills_booking_schedule(arg):
     
 if __name__ == "__main__":
 
-    ## replace with your username and password
-    from config import USERNAME,PASSWORD
+    ## Read credentials from environment variables, fallback to config.py for local use
+    USERNAME = os.environ.get("USERNAME")
+    PASSWORD = os.environ.get("PASSWORD")
+    if not USERNAME or not PASSWORD:
+        from config import USERNAME, PASSWORD
     start = time.time()
     savills = Savills(USERNAME,PASSWORD)
     print(f"Login time {time.time() - start}")
