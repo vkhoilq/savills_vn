@@ -25,32 +25,44 @@ on:
         default: "1"
 
 jobs:
-  book:
+  book_account1:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - username: ${{ secrets.SAVILLS_USERNAME_1 }}
-            password: ${{ secrets.SAVILLS_PASSWORD_1 }}
-            day_offset: 0
-          - username: ${{ secrets.SAVILLS_USERNAME_2 }}
-            password: ${{ secrets.SAVILLS_PASSWORD_2 }}
-            day_offset: 1
     steps:
       - uses: actions/checkout@v4
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Run booking
+      - name: Run booking (account 1 - day ${{ inputs.dayinweek }})
         env:
-          USERNAME: ${{ matrix.username }}
-          PASSWORD: ${{ matrix.password }}
+          USERNAME: ${{ secrets.SAVILLS_USERNAME_1 }}
+          PASSWORD: ${{ secrets.SAVILLS_PASSWORD_1 }}
           GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
           GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
         run: |
-          dayinweek=$(( ${{ inputs.dayinweek }} + ${{ matrix.day_offset }} ))
+          uv run booking_schedule_cli.py \
+            "${{ inputs.hour }}" \
+            "${{ inputs.dayinweek }}" \
+            "${{ inputs.month }}" \
+            "${{ inputs.year }}" \
+            "${{ inputs.wait }}"
+
+  book_account2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Run booking (account 2 - day $(( ${{ inputs.dayinweek }} + 1 )))
+        env:
+          USERNAME: ${{ secrets.SAVILLS_USERNAME_2 }}
+          PASSWORD: ${{ secrets.SAVILLS_PASSWORD_2 }}
+          GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
+          GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
+        run: |
+          dayinweek=$(( ${{ inputs.dayinweek }} + 1 ))
           uv run booking_schedule_cli.py \
             "${{ inputs.hour }}" \
             "$dayinweek" \
